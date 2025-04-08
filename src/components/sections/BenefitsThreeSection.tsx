@@ -56,7 +56,7 @@ export default function BenefitsThreeSection() {
   return (
     <section className="py-12 bg-gradient-to-r from-primary/5 to-secondary/5">
       <div className="container mx-auto px-4">
-        <SectionHeader title="Kaj pravijo druge podjetnice" />
+        <SectionHeader title="Predstavljaj si..." />
         
         <motion.div 
           ref={ref}

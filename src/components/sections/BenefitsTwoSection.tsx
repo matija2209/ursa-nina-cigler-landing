@@ -65,7 +65,7 @@ export default function BenefitsTwoSection() {
   return (
     <section className="py-16 bg-gradient-to-br from-primary/5 to-secondary/10">
       <div className="container mx-auto px-4">
-        <SectionHeader title="Kaj pravijo druge podjetnice" />
+        <SectionHeader title="Predstavljaj si..." />
 
         <motion.div 
           initial="hidden"

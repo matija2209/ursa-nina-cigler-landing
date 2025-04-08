@@ -25,7 +25,15 @@ type ProblemStatement = {
 export default function ProblemTwoSection() {
   const [activeCard, setActiveCard] = useState<number | null>(null);
   const sectionRef = useRef(null);
-  const isInView = useInView(sectionRef, { once: false, amount: 0.2 });
+  const isInView = useInView(sectionRef, { once: false, amount: 0.1 });
+  
+  // Create separate refs for each item to track individual visibility
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  
+  // Function to set refs properly without causing TypeScript errors
+  const setItemRef = (index: number) => (el: HTMLDivElement | null) => {
+    itemRefs.current[index] = el;
+  };
 
   // The array of problem statements with matching icons
   const problemStatements: ProblemStatement[] = [
@@ -76,52 +84,49 @@ export default function ProblemTwoSection() {
     },
   ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.15,
-        delayChildren: 0.3
-      }
-    }
-  };
-
-  const cardVariants = {
-    hidden: { y: 50, opacity: 0 },
-    visible: { 
-      y: 0, 
-      opacity: 1,
+  const listItemVariants = {
+    hidden: { 
+      opacity: 0, 
+      x: -50,
+      scale: 0.95
+    },
+    visible: (i: number) => ({ 
+      opacity: 1, 
+      x: 0,
+      scale: 1,
       transition: { 
         type: "spring",
         stiffness: 300,
-        damping: 20
+        damping: 24,
+        delay: i * 0.1 
       }
-    },
+    }),
     hover: {
-      y: -5,
-      boxShadow: "0 10px 20px rgba(0,0,0,0.1)",
-      transition: { type: "spring", stiffness: 500 }
+      scale: 1.02,
+      x: 8,
+      backgroundColor: "rgba(255, 255, 255, 0.9)",
+      boxShadow: "0 10px 30px rgba(0, 0, 0, 0.1)",
+      transition: { type: "spring", stiffness: 400 }
     }
   };
 
-  const iconVariants = {
+  const iconContainerVariants = {
     hidden: { scale: 0, rotate: -45 },
-    visible: { 
+    visible: (i: number) => ({ 
       scale: 1, 
       rotate: 0,
       transition: { 
         type: "spring",
         stiffness: 500,
-        delay: 0.2
+        delay: i * 0.1 + 0.2
       }
-    },
-    pulse: {
-      scale: [1, 1.2, 1],
+    }),
+    hover: {
+      rotate: [0, -10, 10, 0],
+      scale: 1.2,
       transition: { 
-        duration: 2,
-        repeat: Infinity,
-        repeatType: "reverse" as const
+        duration: 0.5,
+        ease: "easeInOut"
       }
     }
   };
@@ -166,10 +171,30 @@ export default function ProblemTwoSection() {
     setActiveCard(null);
   };
 
+  // Function to determine the background color based on index
+  const getBackgroundColor = (index: number) => {
+    const colors = [
+      "bg-primary/5", 
+      "bg-secondary/5", 
+      "bg-accent/5"
+    ];
+    return colors[index % colors.length];
+  };
+
+  // Function to determine icon color based on index
+  const getIconColor = (index: number) => {
+    const colors = [
+      "text-primary", 
+      "text-secondary", 
+      "text-accent"
+    ];
+    return colors[index % colors.length];
+  };
+
   return (
     <section 
       ref={sectionRef}
-      className="py-16 relative overflow-hidden bg-gradient-to-b from-white to-primary/5"
+      className="py-20 relative overflow-hidden bg-gradient-to-b from-white to-primary/5"
     >
       {/* Decorative SVG elements */}
       <div className="absolute inset-0 z-0 pointer-events-none">
@@ -226,41 +251,61 @@ export default function ProblemTwoSection() {
       <div className="container mx-auto px-4 relative z-10">
         <SectionHeader title="Te naslednje situacije zvenijo znano?" />
         
-        <motion.div
-          className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          variants={containerVariants}
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-        >
-          {problemStatements.map((problem) => (
-            <motion.div
-              key={problem.id}
-              variants={cardVariants}
-              whileHover="hover"
-              initial="hidden"
-              animate="visible"
-              className="bg-white rounded-lg shadow-md p-6 cursor-pointer relative overflow-hidden"
-              onClick={() => handleCardClick(problem.id)}
-            >
-              <div className="absolute top-0 right-0 h-16 w-16 bg-primary/10 rounded-bl-full -mr-8 -mt-8" />
-              
-              <div className="flex items-start gap-4">
+        <div className="mt-16 max-w-3xl mx-auto">
+          {problemStatements.map((problem, index) => {
+            const isEven = index % 2 === 0;
+            return (
+              <motion.div
+                key={problem.id}
+                ref={setItemRef(index)}
+                custom={index}
+                variants={listItemVariants}
+                initial="hidden"
+                whileInView="visible"
+                whileHover="hover"
+                viewport={{ once: false, amount: 0.4 }}
+                className={`mb-6 flex items-center ${
+                  isEven ? 'flex-row' : 'flex-row-reverse'
+                } ${getBackgroundColor(index)} rounded-xl p-5 cursor-pointer shadow-sm transition-all duration-300`}
+                onClick={() => handleCardClick(problem.id)}
+              >
+                {/* Left side (icon) or right side for odd items */}
                 <motion.div
-                  className="p-3 rounded-full bg-primary/20 text-primary"
-                  variants={iconVariants}
-                  animate={[
-                    "visible",
-                    problem.id % 3 === 0 ? "pulse" : ""
-                  ]}
+                  variants={iconContainerVariants}
+                  custom={index}
+                  whileHover="hover"
+                  className={`p-3 rounded-full ${getBackgroundColor(index === 0 ? 2 : index - 1)} ${getIconColor(index)} flex-shrink-0 ${
+                    isEven ? 'mr-5' : 'ml-5'
+                  }`}
                 >
                   {problem.icon}
                 </motion.div>
                 
-                <p className="text-gray-700">{problem.text}</p>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
+                {/* Text content with arrow shape */}
+                <div className={`relative flex-grow ${isEven ? 'text-left' : 'text-right'} ${
+                  isEven ? 'pl-4' : 'pr-4'
+                }`}>
+                  <motion.p 
+                    className="text-gray-700 font-medium"
+                    initial={{ opacity: 0 }}
+                    whileInView={{ 
+                      opacity: 1,
+                      transition: { delay: index * 0.1 + 0.3 }
+                    }}
+                    viewport={{ once: false, amount: 0.8 }}
+                  >
+                    {problem.text}
+                  </motion.p>
+                  
+                  {/* Decorative number */}
+                  <div className={`absolute ${isEven ? '-left-1 top-1/2' : '-right-1 top-1/2'} transform -translate-y-1/2 text-4xl font-bold text-gray-100`}>
+                    {problem.id}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Expanded card modal */}
@@ -294,7 +339,7 @@ export default function ProblemTwoSection() {
                 <>
                   <div className="flex justify-center mb-6">
                     <motion.div
-                      className="p-4 rounded-full bg-primary/20 text-primary"
+                      className={`p-4 rounded-full ${getBackgroundColor((activeCard - 1) % 3)} ${getIconColor((activeCard - 1) % 3)}`}
                       animate={{ 
                         scale: [1, 1.1, 1],
                         rotate: [0, -5, 5, 0]
@@ -302,7 +347,7 @@ export default function ProblemTwoSection() {
                       transition={{ 
                         duration: 2,
                         repeat: Infinity,
-                        repeatType: "reverse" as const
+                        repeatType: "reverse" 
                       }}
                     >
                       {problemStatements.find(p => p.id === activeCard)?.icon}
